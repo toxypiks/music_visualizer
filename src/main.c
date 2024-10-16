@@ -51,12 +51,21 @@ int main(void)
 	  }
 	}
 
+	int w = GetRenderWidth();
+	int h = GetRenderHeight();
+
 	BeginDrawing();
 	ClearBackground(BLACK);
 	float cell_width = (float)GetRenderWidth()/global_frames_count;
 	for (size_t i = 0; i < global_frames_count; ++i) {
-	  int32_t sample = *(int32_t*)&global_frames[i];
-	  printf("%d\n", sample);
+	  int16_t sample = *(int16_t*)&global_frames[i];
+	  if (sample > 0) {
+		float t = (float)sample/INT16_MAX;
+	    DrawRectangle(i * cell_width, h/2 - h/2*t, cell_width, h/2*t, RED);
+	  } else {
+		float t = (float)sample/INT16_MIN;
+		DrawRectangle(i*cell_width, h/2, cell_width, h/2*t, RED);
+	  }
 	}
 	EndDrawing();
   }
