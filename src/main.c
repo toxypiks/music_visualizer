@@ -16,10 +16,21 @@ size_t global_frames_count = 0;
 
 void callback (void *bufferData, unsigned int frames)
 {
-  size_t max_copy_values = MIN(2 * frames, ARRAY_LEN(global_frames));
+  size_t capacity = ARRAY_LEN(global_frames);
+  if(frames <= capacity - global_frames_count) {
+	memcpy(global_frames + global_frames_count, bufferData, sizeof(uint32_t)*frames);
+	global_frames_count += frames;
+  } else if (frames <= capacity) {
+	memmove(global_frames, global_frames + frames, sizeof(uint32_t)*(capacity - frames));
+	memcpy(global_frames + (capacity - frames), bufferData, sizeof(uint32_t)*frames);
+  } else {
+	memcpy(global_frames, bufferData, sizeof(uint32_t)* capacity);
+	global_frames_count = capacity;
+  }
+  // size_t max_copy_values = MIN(2 * frames, ARRAY_LEN(global_frames));
 
-  memcpy(global_frames, bufferData, sizeof(uint32_t) * max_copy_values);
-  global_frames_count = max_copy_values / 2;
+  // memcpy(global_frames, bufferData, sizeof(uint32_t) * max_copy_values);
+  // global_frames_count = max_copy_values / 2;
 }
 
 int main(void)
