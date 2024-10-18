@@ -78,7 +78,7 @@ int main(void)
 	  if (t > 0) {
 	    DrawRectangle(i * cell_width, h/2 - h/2*t, 1, h/2*t, RED);
 	  } else {
-		DrawRectangle(i*cell_width, h/2, 1, h/2*t, RED);
+		DrawRectangle(i * cell_width, h/2, 1, -h/2*t, BLUE);
 	  }
 	}
 	EndDrawing();
