@@ -16,7 +16,7 @@ typedef struct {
   float right;
 } Frame;
 
-Frame global_frames[4800] = {0};
+Frame global_frames[48000] = {0};
 size_t global_frames_count = 0;
 
 void callback (void *bufferData, unsigned int frames)
@@ -32,15 +32,11 @@ void callback (void *bufferData, unsigned int frames)
 	memcpy(global_frames, bufferData, sizeof(Frame)* capacity);
 	global_frames_count = capacity;
   }
-  // size_t max_copy_values = MIN(2 * frames, ARRAY_LEN(global_frames));
-
-  // memcpy(global_frames, bufferData, sizeof(uint32_t) * max_copy_values);
-  // global_frames_count = max_copy_values / 2;
 }
 
 int main(void)
 {
-  InitWindow(800, 600, "Musializer");
+  InitWindow(1600, 600, "Musializer");
   SetTargetFPS(60);
 
   InitAudioDevice();
@@ -72,17 +68,18 @@ int main(void)
 
 	BeginDrawing();
 	ClearBackground(BLACK);
-	float cell_width = (float)GetRenderWidth()/global_frames_count;
-	for (size_t i = 0; i < global_frames_count; ++i) {
+	size_t capacity = ARRAY_LEN(global_frames);
+	float cell_width = (float)GetRenderWidth()/capacity;
+
+	for (size_t i = 0; i < capacity; ++i) {
 	  float t = global_frames[i].left;
 	  if (t > 0) {
-	    DrawRectangle(i * cell_width, h/2 - h/2*t, 1, h/2*t, RED);
+		DrawPixel(i * cell_width, h/2 - h/2*t, RED);
 	  } else {
-		DrawRectangle(i * cell_width, h/2, 1, -h/2*t, BLUE);
+		DrawPixel(i * cell_width, h/2 - h/2*t, BLUE);
 	  }
 	}
 	EndDrawing();
   }
-
   return 0;
 }
