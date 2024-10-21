@@ -18,6 +18,10 @@ set(FFT_TRYOUT
   ${CMAKE_CURRENT_SOURCE_DIR}/src/fft_tryout.c
   )
 
+set(PLUG_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/plug.c
+  )
+
 find_package(raylib)
 
 add_executable(music_visualizer)
@@ -38,6 +42,12 @@ target_sources(fft_tryout
   ${FFT_TRYOUT}
   )
 
+add_library(plug)
+target_sources(plug
+ PRIVATE
+  ${PLUG_SRC}
+  )
+
 target_include_directories(music_visualizer
  PRIVATE
   ${raylib_INCLUDE_DIRS}
@@ -45,7 +55,8 @@ target_include_directories(music_visualizer
 
 target_include_directories(music_wave_plotter
  PRIVATE
-  ${raylib_INCLUDE_DIRS}
+ ${raylib_INCLUDE_DIRS}
+ include
   )
 
 target_include_directories(fft_tryout
@@ -53,8 +64,14 @@ target_include_directories(fft_tryout
   ${raylib_INCLUDE_DIRS}
   )
 
+target_include_directories(plug
+ PRIVATE
+  ${raylib_INCLUDE_DIRS}
+  )
+
 target_link_libraries(music_visualizer
   ${raylib_LIBRARIES}
+  plug
 )
 
 target_link_libraries(music_wave_plotter
@@ -62,6 +79,10 @@ target_link_libraries(music_wave_plotter
 )
 
 target_link_libraries(fft_tryout
+  ${raylib_LIBRARIES}
+  )
+
+target_link_libraries(plug
   ${raylib_LIBRARIES}
   )
 

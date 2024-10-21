@@ -7,6 +7,7 @@
 #include <string.h>
 #include <complex.h>
 #include <math.h>
+#include "plug.h"
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
@@ -76,8 +77,11 @@ void callback (void *bufferData, unsigned int frames)
   }
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+  plug_hello();
+  return 0;
+
   pi = atan2f(1, 1)*4;
   InitWindow(800, 600, "Musializer");
   SetTargetFPS(60);
