@@ -42,7 +42,7 @@ target_sources(fft_tryout
   ${FFT_TRYOUT}
   )
 
-add_library(plug)
+add_library(plug SHARED)
 target_sources(plug
  PRIVATE
   ${PLUG_SRC}
