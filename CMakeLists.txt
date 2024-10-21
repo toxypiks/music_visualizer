@@ -66,3 +66,5 @@ target_link_libraries(fft_tryout
   )
 
 target_link_libraries(fft_tryout m)
+
+target_link_libraries(music_visualizer m)
