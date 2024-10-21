@@ -12,10 +12,10 @@
 
 #define ARRAY_LEN(xs) sizeof(xs)/sizeof(xs[0])
 
-char *shift_args(int *argc, char **argv)
+char *shift_args(int *argc, char ***argv)
 {
   assert(argc > 0);
-  char *result = (*argv);
+  char *result = (**argv);
   (*argv) += 1;
   (*argc) -= 1;
   return result;
@@ -64,7 +64,9 @@ int main(int argc, char **argv)
 
   if (!reload_libplug()) return 1;
 
-  const char *program = shift_args(&argc, argv);
+  const char *program = shift_args(&argc, &argv);
+  printf("main: programm: %s\n", program);
+
 
   if (argc == 0) {
 	fprintf(stderr, "Usage: %s <input>\n", program);
@@ -72,7 +74,8 @@ int main(int argc, char **argv)
 	return 1;
   }
 
-  const char *file_path = shift_args(&argc, argv);
+  const char *file_path = shift_args(&argc, &argv);
+  printf("main filepath: %s\n",file_path);
 
   InitWindow(800, 600, "Musializer");
   SetTargetFPS(60);

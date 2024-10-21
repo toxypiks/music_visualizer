@@ -59,6 +59,7 @@ void plug_hello(void)
 
 void plug_init(Plug *plug, const char *file_path)
 {
+  printf("filepath: %s\n",file_path);
   plug->music = LoadMusicStream(file_path);
   assert(plug->music.stream.sampleSize == 32);
   assert(plug->music.stream.channels == 2);
