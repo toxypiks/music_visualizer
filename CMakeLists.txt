@@ -71,7 +71,7 @@ target_include_directories(plug
 
 target_link_libraries(music_visualizer
   ${raylib_LIBRARIES}
-  plug
+  #plug
 )
 
 target_link_libraries(music_wave_plotter
