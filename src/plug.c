@@ -98,10 +98,25 @@ void plug_update(Plug *plug)
 	if (max_amp < a) max_amp = a;
   }
 
-  float cell_width = 2; //(float)w/N;
-	for (size_t i = 0; i < N; ++i) {
-	  float t = amp(out[i])/max_amp;
-	  DrawRectangle(i*cell_width, h/2 - h/2*t, cell_width, h/2*t, RED);
+  float step = 1.06;
+  size_t m = 0;
+  for (float f = 20.0f; (size_t) f < N; f *= step) {
+	m += 1;
+  }
+
+  float cell_width = (float)w/m;
+  m = 0;
+  for (float f = 20.0f; (size_t) f < N; f *= step) {
+	float f1 = f*step;
+	float a = 0.0f;
+	for (size_t q = (size_t) f; q < N && q < (size_t) f1; ++q) {
+	  a += amp(out[q]);
 	}
-	EndDrawing();
+	a /= (size_t) f1 - (size_t) f + 1;
+	float t = a/max_amp;
+	DrawRectangle(m*cell_width, h/2 - h/2*t, cell_width, h/2*t, GREEN);
+	m += 1;
+  }
+
+  EndDrawing();
 }
