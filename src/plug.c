@@ -72,6 +72,16 @@ void plug_init(Plug *plug, const char *file_path)
   AttachAudioStreamProcessor(plug->music.stream, callback);
 }
 
+void plug_pre_reload(Plug *plug)
+{
+  DetachAudioStreamProcessor(plug->music.stream, callback);
+}
+
+void plug_post_reload(Plug *plug)
+{
+  AttachAudioStreamProcessor(plug->music.stream, callback);
+}
+
 void plug_update(Plug *plug)
 {
   UpdateMusicStream(plug->music);

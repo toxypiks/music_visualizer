@@ -26,6 +26,8 @@ void *libplug = NULL;
 
 plug_hello_t plug_hello = NULL;
 plug_init_t plug_init = NULL;
+plug_pre_reload_t plug_pre_reload = NULL;
+plug_post_reload_t plug_post_reload = NULL;
 plug_update_t plug_update = NULL;
 Plug plug = {0};
 
@@ -47,6 +49,18 @@ bool reload_libplug(void)
 
   plug_init = dlsym(libplug, "plug_init");
   if (plug_init == NULL) {
+	fprintf(stderr, "ERROR: could not find plug_init symbol in %s: %s", libplug_file_name, dlerror());
+	return false;
+  }
+
+  plug_pre_reload = dlsym(libplug, "plug_pre_reload");
+  if (plug_pre_reload == NULL) {
+	fprintf(stderr, "ERROR: could not find plug_init symbol in %s: %s", libplug_file_name, dlerror());
+	return false;
+  }
+
+  plug_post_reload = dlsym(libplug, "plug_post_reload");
+  if (plug_post_reload == NULL) {
 	fprintf(stderr, "ERROR: could not find plug_init symbol in %s: %s", libplug_file_name, dlerror());
 	return false;
   }
@@ -85,7 +99,9 @@ int main(int argc, char **argv)
 
   while(!WindowShouldClose()) {
 	if (IsKeyPressed(KEY_R)) {
+	  plug_pre_reload(&plug);
 	  if (!reload_libplug()) return 1;
+	  plug_post_reload(&plug);
 	}
 	plug_update(&plug);
   }
