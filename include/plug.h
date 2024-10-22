@@ -4,7 +4,7 @@
 #include <complex.h>
 #include <raylib.h>
 
-#define N (1<<15)
+#define N (1<<13)
 
 typedef struct {
   Music music;
