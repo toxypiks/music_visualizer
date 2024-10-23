@@ -72,6 +72,7 @@ target_include_directories(plug
 # here is HOTRELAOD checked
 if(DEFINED HOTRELOAD)
   message("HOTRELOADE enabled (${HOTRELOAD})")
+  target_compile_definitions(music_visualizer PRIVATE HOTRELOAD)
 else(DEFINED HOTRELOAD)
   set(MUSIC_VISUALIZER_LINK_PLUG_LIB "plug")
   message("lib plug: ${MUSIC_VISUALIZER_LINK_PLUG_LIB}")

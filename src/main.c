@@ -28,11 +28,12 @@ void *libplug = NULL;
 //define LIST_OF_PLUGS from plug.h
 //concatenate token passed to name also to name_t using name##_t
 #define PLUG(name) name##_t *name = NULL;
+LIST_OF_PLUGS
 #else
 #define PLUG(name) name##_t name;
 LIST_OF_PLUGS
-#undef PLUG
 #endif
+#undef PLUG
 
 Plug plug = {0};
 
