@@ -27,15 +27,13 @@ void *libplug = NULL;
 #ifdef HOTRELOAD
 //define LIST_OF_PLUGS from plug.h
 //concatenate token passed to name also to name_t using name##_t
-#define PLUG(name) name##_t *name = NULL;
+#define PLUG(name, ...) name##_t *name = NULL;
 LIST_OF_PLUGS
 #else
-#define PLUG(name) name##_t name;
+#define PLUG(name, ...) name##_t name;
 LIST_OF_PLUGS
 #endif
 #undef PLUG
-
-Plug plug = {0};
 
 #ifdef HOTRELOAD
 bool reload_libplug(void)
@@ -49,7 +47,7 @@ bool reload_libplug(void)
   }
 
   //define string literal with # in macro definition
-  #define PLUG(name) \
+#define PLUG(name, ...)					\
       name = dlsym(libplug, #name); \
       if (name == NULL) { \
 		fprintf(stderr, "ERROR: could not find %s symbol in %s: %s", \
@@ -88,15 +86,15 @@ int main(int argc, char **argv)
   SetTargetFPS(60);
   InitAudioDevice();
 
-  plug_init(&plug, file_path);
+  plug_init(file_path);
 
   while(!WindowShouldClose()) {
 	if (IsKeyPressed(KEY_R)) {
-	  plug_pre_reload(&plug);
+	  void *state = plug_pre_reload();
 	  if (!reload_libplug()) return 1;
-	  plug_post_reload(&plug);
+	  plug_post_reload(state);
 	}
-	plug_update(&plug);
+	plug_update();
   }
   return 0;
 }

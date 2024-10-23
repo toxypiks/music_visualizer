@@ -5,6 +5,12 @@
 #include <math.h>
 #include <string.h>
 
+#define N (1<<13)
+
+typedef struct {
+  Music music;
+} Plug;
+
 float in[N];
 float complex out[N];
 
@@ -46,11 +52,6 @@ void callback (void *bufferData, unsigned int frames)
 	memmove(in, in + 1, (N - 1)*sizeof(in[0]));
 	in[N-1] = fs[i][0];
   }
-}
-
-void plug_hello(void)
-{
-  printf("Hello from Plugin\n");
 }
 
 void plug_init(Plug *plug, const char *file_path)
