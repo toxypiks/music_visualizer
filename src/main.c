@@ -42,35 +42,17 @@ bool reload_libplug(void)
 	return false;
   }
 
-  plug_hello = dlsym(libplug, "plug_hello");
-  if (plug_hello == NULL) {
-	fprintf(stderr, "ERROR: could not find plug_hello symbol in %s: %s", libplug_file_name, dlerror());
-	return false;
-  }
+  //define string literal with # in macro definition
+  #define PLUG(name) \
+      name = dlsym(libplug, #name); \
+      if (name == NULL) { \
+		fprintf(stderr, "ERROR: could not find %s symbol in %s: %s", \
+			    #name, libplug_file_name, dlerror()); \
+	    return false; \
+      }
+  LIST_OF_PLUGS
+  #undef PLUG
 
-  plug_init = dlsym(libplug, "plug_init");
-  if (plug_init == NULL) {
-	fprintf(stderr, "ERROR: could not find plug_init symbol in %s: %s", libplug_file_name, dlerror());
-	return false;
-  }
-
-  plug_pre_reload = dlsym(libplug, "plug_pre_reload");
-  if (plug_pre_reload == NULL) {
-	fprintf(stderr, "ERROR: could not find plug_init symbol in %s: %s", libplug_file_name, dlerror());
-	return false;
-  }
-
-  plug_post_reload = dlsym(libplug, "plug_post_reload");
-  if (plug_post_reload == NULL) {
-	fprintf(stderr, "ERROR: could not find plug_init symbol in %s: %s", libplug_file_name, dlerror());
-	return false;
-  }
-
-  plug_update = dlsym(libplug, "plug_update");
-  if (plug_update == NULL) {
-	fprintf(stderr, "ERROR: could not find plug_update symbol in %s: %s", libplug_file_name, dlerror());
-	return false;
-  }
   return true;
 }
 
@@ -106,6 +88,5 @@ int main(int argc, char **argv)
 	}
 	plug_update(&plug);
   }
-
   return 0;
 }
