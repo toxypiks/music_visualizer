@@ -16,4 +16,13 @@ typedef void (*plug_pre_reload_t) (Plug *plug);
 typedef void (*plug_post_reload_t) (Plug *plug);
 typedef void (*plug_update_t) (Plug *plug);
 
+//use X macro for compile time code generation
+
+#define LIST_OF_PLUGS \
+  PLUG(plug_hello) \
+  PLUG(plug_init) \
+  PLUG(plug_pre_reload) \
+  PLUG(plug_post_reload) \
+  PLUG(plug_update) \
+
 #endif // PLUG_H_

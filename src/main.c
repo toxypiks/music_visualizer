@@ -24,11 +24,12 @@ char *shift_args(int *argc, char ***argv)
 const char *libplug_file_name = "libplug.so";
 void *libplug = NULL;
 
-plug_hello_t plug_hello = NULL;
-plug_init_t plug_init = NULL;
-plug_pre_reload_t plug_pre_reload = NULL;
-plug_post_reload_t plug_post_reload = NULL;
-plug_update_t plug_update = NULL;
+//define LIST_OF_PLUGS from plug.h
+//concatenate token passed to name also to name_t using name##_t
+#define PLUG(name) name##_t name = NULL;
+LIST_OF_PLUGS
+#undef PLUG
+
 Plug plug = {0};
 
 bool reload_libplug(void)
