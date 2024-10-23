@@ -67,11 +67,20 @@ target_include_directories(fft_tryout
 target_include_directories(plug
  PRIVATE
   ${raylib_INCLUDE_DIRS}
-  )
+)
+
+# here is HOTRELAOD checked
+if(DEFINED HOTRELOAD)
+  message("HOTRELOADE enabled (${HOTRELOAD})")
+else(DEFINED HOTRELOAD)
+  set(MUSIC_VISUALIZER_LINK_PLUG_LIB "plug")
+  message("lib plug: ${MUSIC_VISUALIZER_LINK_PLUG_LIB}")
+endif(DEFINED HOTRELOAD)
+# supress cmake warning var is not in use (boilerplate)
 
 target_link_libraries(music_visualizer
   ${raylib_LIBRARIES}
-  #plug
+  ${MUSIC_VISUALIZER_LINK_PLUG_LIB}
 )
 
 target_link_libraries(music_wave_plotter
