@@ -8,11 +8,6 @@
 float in[N];
 float complex out[N];
 
-typedef struct {
-  float left;
-  float right;
-} Frame;
-
 void fft(float in[], size_t stride, float complex out[], size_t n)
 {
   assert(n > 0);
@@ -44,11 +39,12 @@ float amp (float complex z)
 
 void callback (void *bufferData, unsigned int frames)
 {
-  Frame *fs = bufferData;
+  //pointer to array of 2 float [(float1), /float2), (float1), (float2),..]
+  float (*fs)[2] = bufferData;
 
   for(size_t i = 0; i < frames; ++i) {
 	memmove(in, in + 1, (N - 1)*sizeof(in[0]));
-	in[N-1] = fs[i].left;
+	in[N-1] = fs[i][0];
   }
 }
 
@@ -59,15 +55,13 @@ void plug_hello(void)
 
 void plug_init(Plug *plug, const char *file_path)
 {
-  printf("filepath: %s\n",file_path);
   plug->music = LoadMusicStream(file_path);
-  assert(plug->music.stream.sampleSize == 32);
-  assert(plug->music.stream.channels == 2);
   printf("music.frameCount = %u\n", plug->music.frameCount);
   printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
   printf("music.stream.sampleSize = %u\n", plug->music.stream.sampleSize);
   printf("music.stream.channels = %u\n", plug->music.stream.channels);
 
+  SetMusicVolume(plug->music, 0.5f);
   PlayMusicStream(plug->music);
   AttachAudioStreamProcessor(plug->music.stream, callback);
 }
@@ -87,11 +81,33 @@ void plug_update(Plug *plug)
   UpdateMusicStream(plug->music);
 
 	if(IsKeyPressed(KEY_SPACE)) {
+	  printf("yeah\n");
 	  if(IsMusicStreamPlaying(plug->music)) {
 		PauseMusicStream(plug->music);
 	  } else {
 		ResumeMusicStream(plug->music);
 	  }
+	}
+
+	if(IsFileDropped()) {
+	  FilePathList droppedFiles = LoadDroppedFiles();
+	  if (droppedFiles.count > 0) {
+		printf("NEW FILES JUST DROPPED!\n");
+		const char *file_path = droppedFiles.paths[0];
+		StopMusicStream(plug->music);
+		UnloadMusicStream(plug->music);
+		plug->music = LoadMusicStream(file_path);
+
+		printf("music.frameCount = %u\n", plug->music.frameCount);
+        printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
+        printf("music.stream.sampleSize = %u\n", plug->music.stream.sampleSize);
+        printf("music.stream.channels = %u\n", plug->music.stream.channels);
+
+		SetMusicVolume(plug->music, 0.5f);
+        PlayMusicStream(plug->music);
+        AttachAudioStreamProcessor(plug->music.stream, callback);
+	  }
+	  UnloadDroppedFiles(droppedFiles);
 	}
 
 	int w = GetRenderWidth();
@@ -124,7 +140,7 @@ void plug_update(Plug *plug)
 	}
 	a /= (size_t) f1 - (size_t) f + 1;
 	float t = a/max_amp;
-	DrawRectangle(m*cell_width, h/2 - h/2*t, cell_width, h/2*t, GREEN);
+	DrawRectangle(m*cell_width, h/2 - h/2*t, cell_width, h/2*t, BLUE);
 	m += 1;
   }
 
