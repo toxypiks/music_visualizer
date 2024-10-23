@@ -24,14 +24,19 @@ char *shift_args(int *argc, char ***argv)
 const char *libplug_file_name = "libplug.so";
 void *libplug = NULL;
 
+#ifdef HOTRELOAD
 //define LIST_OF_PLUGS from plug.h
 //concatenate token passed to name also to name_t using name##_t
-#define PLUG(name) name##_t name = NULL;
+#define PLUG(name) name##_t *name = NULL;
+#else
+#define PLUG(name) name##_t name;
 LIST_OF_PLUGS
 #undef PLUG
+#endif
 
 Plug plug = {0};
 
+#ifdef HOTRELOAD
 bool reload_libplug(void)
 {
   if(libplug != NULL) dlclose(libplug);
@@ -55,6 +60,10 @@ bool reload_libplug(void)
 
   return true;
 }
+
+#else
+#define reload_libplug() true
+#endif
 
 int main(int argc, char **argv)
 {
