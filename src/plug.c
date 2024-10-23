@@ -4,12 +4,15 @@
 #include <assert.h>
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define N (1<<13)
 
 typedef struct {
   Music music;
 } Plug;
+
+Plug *plug = NULL;
 
 float in[N];
 float complex out[N];
@@ -46,7 +49,7 @@ float amp (float complex z)
 void callback (void *bufferData, unsigned int frames)
 {
   //pointer to array of 2 float [(float1), /float2), (float1), (float2),..]
-  float (*fs)[2] = bufferData;
+  float (*fs)[plug->music.stream.channels] = bufferData;
 
   for(size_t i = 0; i < frames; ++i) {
 	memmove(in, in + 1, (N - 1)*sizeof(in[0]));
@@ -54,8 +57,13 @@ void callback (void *bufferData, unsigned int frames)
   }
 }
 
-void plug_init(Plug *plug, const char *file_path)
+void plug_init(const char *file_path)
 {
+  plug = malloc(sizeof(*plug));
+  assert(plug != NULL && "Oops");
+  memset(plug, 0, sizeof(*plug));
+
+
   plug->music = LoadMusicStream(file_path);
   printf("music.frameCount = %u\n", plug->music.frameCount);
   printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
@@ -67,17 +75,19 @@ void plug_init(Plug *plug, const char *file_path)
   AttachAudioStreamProcessor(plug->music.stream, callback);
 }
 
-void plug_pre_reload(Plug *plug)
+Plug *plug_pre_reload(void)
 {
   DetachAudioStreamProcessor(plug->music.stream, callback);
+  return plug;
 }
 
-void plug_post_reload(Plug *plug)
+void plug_post_reload(Plug *prev)
 {
+  plug = prev;
   AttachAudioStreamProcessor(plug->music.stream, callback);
 }
 
-void plug_update(Plug *plug)
+void plug_update(void)
 {
   UpdateMusicStream(plug->music);
 
