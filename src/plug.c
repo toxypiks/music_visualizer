@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define N (1<<13)
+#define N (1<<10)
 
 typedef struct {
   Music music;
@@ -15,7 +15,8 @@ typedef struct {
 
 Plug *plug = NULL;
 
-float in[N];
+float in1[N];
+float in2[N];
 float complex out[N];
 
 void fft(float in[], size_t stride, float complex out[], size_t n)
@@ -41,10 +42,11 @@ void fft(float in[], size_t stride, float complex out[], size_t n)
 
 float amp (float complex z)
 {
-  float a = fabs(crealf(z));
+  /*float a = fabs(crealf(z));
   float b = fabsf(cimagf(z));
-  if (a < b) return b;
-  return a;
+  if (a < b) return b;*/
+  //use size of vector instead of max
+  return cabsf(z);
 }
 
 void callback (void *bufferData, unsigned int frames)
@@ -53,8 +55,8 @@ void callback (void *bufferData, unsigned int frames)
   float (*fs)[plug->music.stream.channels] = bufferData;
 
   for(size_t i = 0; i < frames; ++i) {
-	memmove(in, in + 1, (N - 1)*sizeof(in[0]));
-	in[N-1] = fs[i][0];
+	memmove(in1, in1 + 1, (N - 1)*sizeof(in1[0]));
+	in1[N-1] = fs[i][0];
   }
 }
 
@@ -142,7 +144,12 @@ void plug_update(void)
 	ClearBackground(BLACK);
 
 	if (IsMusicReady(plug->music)) {
-	  fft(in, 1, out, N);
+	  for (size_t i = 0; i < N; ++i) {
+		float t = (float)i/(N -1);
+		float hann = 0.5 - 0.5*cosf(2*PI*t);
+		in2[i] = in1[i]*hann;
+	  }
+	  fft(in2, 1, out, N);
 
 	  float max_amp = 0.0f;
 	  for (size_t i = 0; i < N; ++i) {
@@ -151,20 +158,22 @@ void plug_update(void)
 	  }
 
 	  float step = 1.06;
+	  float lowf = 1.0f;
 	  size_t m = 0;
-	  for (float f = 20.0f; (size_t) f < N; f *= step) {
+	  for (float f = lowf; (size_t) f < N/2; f = ceilf(f*step)) {
 		m += 1;
 	  }
 
 	  float cell_width = (float)w/m;
 	  m = 0;
-	  for (float f = 20.0f; (size_t) f < N; f *= step) {
-		float f1 = f*step;
+	  for (float f = lowf; (size_t) f < N/2; f = ceilf(f*step)) {
+		float f1 = ceilf(f*step);
 		float a = 0.0f;
-		for (size_t q = (size_t) f; q < N && q < (size_t) f1; ++q) {
-		  a += amp(out[q]);
+		for (size_t q = (size_t) f; q < N/2 && q < (size_t) f1; ++q) {
+		   float b = amp(out[q]);
+		   if (b > a) a = b;
 		}
-		a /= (size_t) f1 - (size_t) f + 1;
+		// a /= (size_t) f1 - (size_t) f + 1;
 		float t = a/max_amp;
 		DrawRectangle(m*cell_width, h/2 - h/2*t, cell_width, h/2*t, BLUE);
 		m += 1;
