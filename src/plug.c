@@ -45,14 +45,15 @@ float amp (float complex z)
   /*float a = fabs(crealf(z));
   float b = fabsf(cimagf(z));
   if (a < b) return b;*/
-  //use size of vector instead of max
-  return cabsf(z);
+  float a = crealf(z);
+  float b = cimagf(z);
+  return logf(a*a + b*b);
 }
 
 void callback (void *bufferData, unsigned int frames)
 {
   //pointer to array of 2 float [(float1), /float2), (float1), (float2),..]
-  float (*fs)[plug->music.stream.channels] = bufferData;
+  float (*fs)[2] = bufferData;
 
   for(size_t i = 0; i < frames; ++i) {
 	memmove(in1, in1 + 1, (N - 1)*sizeof(in1[0]));
@@ -175,7 +176,7 @@ void plug_update(void)
 		}
 		// a /= (size_t) f1 - (size_t) f + 1;
 		float t = a/max_amp;
-		DrawRectangle(m*cell_width, h/2 - h/2*t, cell_width, h/2*t, BLUE);
+		DrawRectangle(m*cell_width, h - h/2*t, cell_width, h/2*t, BLUE);
 		m += 1;
 	  }
 	}
