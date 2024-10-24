@@ -10,6 +10,7 @@
 
 typedef struct {
   Music music;
+  bool error;
 } Plug;
 
 Plug *plug = NULL;
@@ -118,6 +119,7 @@ void plug_update(void)
 		plug->music = LoadMusicStream(file_path);
 
 		if(IsMusicReady(plug->music)) {
+		  plug->error = false;
 		  printf("music.frameCount = %u\n", plug->music.frameCount);
 		  printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
 		  printf("music.stream.sampleSize = %u\n", plug->music.stream.sampleSize);
@@ -126,6 +128,8 @@ void plug_update(void)
 		  SetMusicVolume(plug->music, 0.5f);
 		  AttachAudioStreamProcessor(plug->music.stream, callback);
 		  PlayMusicStream(plug->music);
+		} else {
+		  plug->error = true;
 		}
 	  }
 	  UnloadDroppedFiles(droppedFiles);
@@ -137,33 +141,48 @@ void plug_update(void)
 	BeginDrawing();
 	ClearBackground(BLACK);
 
-	fft(in, 1, out, N);
+	if (IsMusicReady(plug->music)) {
+	  fft(in, 1, out, N);
 
-  float max_amp = 0.0f;
-  for (size_t i = 0; i < N; ++i) {
-	float a = amp(out[i]);
-	if (max_amp < a) max_amp = a;
-  }
+	  float max_amp = 0.0f;
+	  for (size_t i = 0; i < N; ++i) {
+		float a = amp(out[i]);
+		if (max_amp < a) max_amp = a;
+	  }
 
-  float step = 1.06;
-  size_t m = 0;
-  for (float f = 20.0f; (size_t) f < N; f *= step) {
-	m += 1;
-  }
+	  float step = 1.06;
+	  size_t m = 0;
+	  for (float f = 20.0f; (size_t) f < N; f *= step) {
+		m += 1;
+	  }
 
-  float cell_width = (float)w/m;
-  m = 0;
-  for (float f = 20.0f; (size_t) f < N; f *= step) {
-	float f1 = f*step;
-	float a = 0.0f;
-	for (size_t q = (size_t) f; q < N && q < (size_t) f1; ++q) {
-	  a += amp(out[q]);
+	  float cell_width = (float)w/m;
+	  m = 0;
+	  for (float f = 20.0f; (size_t) f < N; f *= step) {
+		float f1 = f*step;
+		float a = 0.0f;
+		for (size_t q = (size_t) f; q < N && q < (size_t) f1; ++q) {
+		  a += amp(out[q]);
+		}
+		a /= (size_t) f1 - (size_t) f + 1;
+		float t = a/max_amp;
+		DrawRectangle(m*cell_width, h/2 - h/2*t, cell_width, h/2*t, BLUE);
+		m += 1;
+	  }
 	}
-	a /= (size_t) f1 - (size_t) f + 1;
-	float t = a/max_amp;
-	DrawRectangle(m*cell_width, h/2 - h/2*t, cell_width, h/2*t, BLUE);
-	m += 1;
-  }
-
-  EndDrawing();
+	else {
+	  const char *label;
+	  Color color;
+	  int height = 69;
+	  if (plug->error) {
+		label = "Could not load file";
+		color = RED;
+	  } else {
+		label = "Drag&Drop Music Here";
+		color = WHITE;
+	  }
+	  int width = MeasureText(label, height);
+	  DrawText(label, w/2 - width/2, h/2 - height/2, height, color);
+	}
+	EndDrawing();
 }
