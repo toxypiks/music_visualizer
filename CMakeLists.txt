@@ -11,11 +11,11 @@ set(MUSIC_VISUALIZER
   )
 
 set(MUSIC_WAVE_PLOTTER
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/music_wave_plotter.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/music_wave_plotter.c
   )
 
 set(FFT_TRYOUT
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/fft_tryout.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/fft_tryout.c
   )
 
 set(PLUG_SRC
