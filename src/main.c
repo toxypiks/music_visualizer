@@ -12,15 +12,6 @@
 
 #define ARRAY_LEN(xs) sizeof(xs)/sizeof(xs[0])
 
-char *shift_args(int *argc, char ***argv)
-{
-  assert(argc > 0);
-  char *result = (**argv);
-  (*argv) += 1;
-  (*argc) -= 1;
-  return result;
-}
-
 const char *libplug_file_name = "libplug.so";
 void *libplug = NULL;
 
@@ -64,29 +55,17 @@ bool reload_libplug(void)
 #define reload_libplug() true
 #endif
 
-int main(int argc, char **argv)
+int main(void)
 {
 
   if (!reload_libplug()) return 1;
 
-  const char *program = shift_args(&argc, &argv);
-  printf("main: programm: %s\n", program);
-
-
-  if (argc == 0) {
-	fprintf(stderr, "Usage: %s <input>\n", program);
-	fprintf(stderr, "ERROR: no input file is provided\n");
-	return 1;
-  }
-
-  const char *file_path = shift_args(&argc, &argv);
-  printf("main filepath: %s\n",file_path);
-
+  size_t factor = 60;
   InitWindow(800, 600, "Musializer");
-  SetTargetFPS(60);
+  SetTargetFPS(factor);
   InitAudioDevice();
 
-  plug_init(file_path);
+  plug_init();
 
   while(!WindowShouldClose()) {
 	if (IsKeyPressed(KEY_R)) {

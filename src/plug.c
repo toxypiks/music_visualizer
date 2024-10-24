@@ -57,46 +57,49 @@ void callback (void *bufferData, unsigned int frames)
   }
 }
 
-void plug_init(const char *file_path)
+void plug_init(void)
 {
   plug = malloc(sizeof(*plug));
   assert(plug != NULL && "Oops");
   memset(plug, 0, sizeof(*plug));
-
-
-  plug->music = LoadMusicStream(file_path);
-  printf("music.frameCount = %u\n", plug->music.frameCount);
-  printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
-  printf("music.stream.sampleSize = %u\n", plug->music.stream.sampleSize);
-  printf("music.stream.channels = %u\n", plug->music.stream.channels);
-
-  SetMusicVolume(plug->music, 0.5f);
-  PlayMusicStream(plug->music);
-  AttachAudioStreamProcessor(plug->music.stream, callback);
 }
 
 Plug *plug_pre_reload(void)
 {
-  DetachAudioStreamProcessor(plug->music.stream, callback);
-  return plug;
+  if(IsMusicReady(plug->music)) {
+	DetachAudioStreamProcessor(plug->music.stream, callback);
+	return plug;
+  }
 }
 
 void plug_post_reload(Plug *prev)
 {
   plug = prev;
-  AttachAudioStreamProcessor(plug->music.stream, callback);
+  if(IsMusicReady(plug->music)) {
+    AttachAudioStreamProcessor(plug->music.stream, callback);
+  }
 }
 
 void plug_update(void)
 {
-  UpdateMusicStream(plug->music);
+  if(IsMusicReady(plug->music)) {
+	UpdateMusicStream(plug->music);
+  }
 
 	if(IsKeyPressed(KEY_SPACE)) {
-	  printf("yeah\n");
-	  if(IsMusicStreamPlaying(plug->music)) {
+	  if(IsMusicReady(plug->music)) {
+	    if(IsMusicStreamPlaying(plug->music)) {
 		PauseMusicStream(plug->music);
-	  } else {
-		ResumeMusicStream(plug->music);
+		} else {
+		  ResumeMusicStream(plug->music);
+		}
+	  }
+	}
+
+	if(IsKeyPressed(KEY_Q)) {
+	  if (IsMusicReady(plug->music)) {
+		StopMusicStream(plug->music);
+		PlayMusicStream(plug->music);
 	  }
 	}
 
@@ -105,18 +108,25 @@ void plug_update(void)
 	  if (droppedFiles.count > 0) {
 		printf("NEW FILES JUST DROPPED!\n");
 		const char *file_path = droppedFiles.paths[0];
-		StopMusicStream(plug->music);
-		UnloadMusicStream(plug->music);
+
+		if(IsMusicReady(plug->music)) {
+		  StopMusicStream(plug->music);
+		  UnloadMusicStream(plug->music);
+		}
+
+		//weird
 		plug->music = LoadMusicStream(file_path);
 
-		printf("music.frameCount = %u\n", plug->music.frameCount);
-        printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
-        printf("music.stream.sampleSize = %u\n", plug->music.stream.sampleSize);
-        printf("music.stream.channels = %u\n", plug->music.stream.channels);
+		if(IsMusicReady(plug->music)) {
+		  printf("music.frameCount = %u\n", plug->music.frameCount);
+		  printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
+		  printf("music.stream.sampleSize = %u\n", plug->music.stream.sampleSize);
+		  printf("music.stream.channels = %u\n", plug->music.stream.channels);
 
-		SetMusicVolume(plug->music, 0.5f);
-        PlayMusicStream(plug->music);
-        AttachAudioStreamProcessor(plug->music.stream, callback);
+		  SetMusicVolume(plug->music, 0.5f);
+		  AttachAudioStreamProcessor(plug->music.stream, callback);
+		  PlayMusicStream(plug->music);
+		}
 	  }
 	  UnloadDroppedFiles(droppedFiles);
 	}
