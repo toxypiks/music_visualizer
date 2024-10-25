@@ -186,7 +186,7 @@ void plug_update(void)
 	  float cell_width = (float)w/m;
 	  for (size_t i = 0; i < m; ++i) {
 		float t = out_smooth[i];
-		DrawRectangle(i*cell_width, h - h*2/3*t, cell_width, h*2/3*t, BLUE);
+		DrawRectangle(i*cell_width, h - h*2/3*t, ceilf(cell_width), h*2/3*t, BLUE);
 	  }
 	} else {
 	    const char *label;
