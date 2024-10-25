@@ -185,8 +185,12 @@ void plug_update(void)
 	  // Display frequencies
 	  float cell_width = (float)w/m;
 	  for (size_t i = 0; i < m; ++i) {
+		float hue = (float)i/m;
 		float t = out_smooth[i];
-		DrawRectangle(i*cell_width, h - h*2/3*t, ceilf(cell_width), h*2/3*t, BLUE);
+		float saturation = 0.75f;
+		float value = 1.0f;
+		Color color = ColorFromHSV(hue*360, saturation, value);
+		DrawRectangle(i*cell_width, h - h*2/3*t, ceilf(cell_width), h*2/3*t, color);
 	  }
 	} else {
 	    const char *label;
@@ -199,6 +203,8 @@ void plug_update(void)
 		    label = "Drag&Drop Music Here";
 		    color = WHITE;
 		}
+		int width = MeasureText(label, height);
+		DrawText(label, w/2 - width/2, h/2 - height/2, height, color);
 	}
 	EndDrawing();
 }
