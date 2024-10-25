@@ -19,6 +19,7 @@ float in_raw[N];
 float in_win[N];
 float complex out_raw[N];
 float out_log[N];
+float out_smooth[N];
 
 void fft(float in[], size_t stride, float complex out[], size_t n)
 {
@@ -139,6 +140,8 @@ void plug_update(void)
 	int w = GetRenderWidth();
 	int h = GetRenderHeight();
 
+	float dt = GetFrameTime();
+
 	BeginDrawing();
 	ClearBackground(BLACK);
 
@@ -174,10 +177,15 @@ void plug_update(void)
 		out_log[i] /= max_amp;
 	  }
 
+	  float smoothness = 8;
+	  for(size_t i = 0; i < m; ++i) {
+		out_smooth[i] += (out_log[i] - out_smooth[i])*smoothness*dt;
+	  }
+
 	  // Display frequencies
 	  float cell_width = (float)w/m;
 	  for (size_t i = 0; i < m; ++i) {
-		float t = out_log[i];
+		float t = out_smooth[i];
 		DrawRectangle(i*cell_width, h - h*2/3*t, cell_width, h*2/3*t, BLUE);
 	  }
 	} else {
