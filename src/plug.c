@@ -190,7 +190,20 @@ void plug_update(void)
 		float saturation = 0.75f;
 		float value = 1.0f;
 		Color color = ColorFromHSV(hue*360, saturation, value);
-		DrawRectangle(i*cell_width, h - h*2/3*t, ceilf(cell_width), h*2/3*t, color);
+		Vector2 start_pos = {
+		  i*cell_width + cell_width/2,
+		  h - h*2/3*t,
+		};
+
+		Vector2 end_pos = {
+		  i*cell_width + cell_width/2,
+		  h,
+		};
+		float thick = cell_width/2*sqrtf(t);
+		float radius = cell_width*1.5*sqrtf(t);
+		DrawCircleV(start_pos, radius, color);
+		DrawLineEx(start_pos, end_pos, thick, color);
+		// DrawRectangle(i*cell_width, h - h*2/3*t, ceilf(cell_width), h*2/3*t, color);
 	  }
 	} else {
 	    const char *label;
