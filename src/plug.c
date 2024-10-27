@@ -11,6 +11,7 @@
 typedef struct {
   Music music;
   bool error;
+  Shader circle;
 } Plug;
 
 Plug *plug = NULL;
@@ -65,6 +66,8 @@ void plug_init(void)
   plug = malloc(sizeof(*plug));
   assert(plug != NULL && "Oops");
   memset(plug, 0, sizeof(*plug));
+
+  plug->circle = LoadShader(NULL, "../shaders/circle.fs");
 }
 
 Plug *plug_pre_reload(void)
@@ -81,6 +84,8 @@ void plug_post_reload(Plug *prev)
   if(IsMusicReady(plug->music)) {
     AttachAudioStreamProcessor(plug->music.stream, callback);
   }
+  UnloadShader(plug->circle);
+  plug->circle = LoadShader(NULL, "../shaders/circle.fs");
 }
 
 void plug_update(void)
@@ -182,8 +187,9 @@ void plug_update(void)
 		out_smooth[i] += (out_log[i] - out_smooth[i])*smoothness*dt;
 	  }
 
-	  // Display frequencies
 	  float cell_width = (float)w/m;
+
+      //Display the Bars
 	  for (size_t i = 0; i < m; ++i) {
 		float hue = (float)i/m;
 		float t = out_smooth[i];
@@ -200,12 +206,32 @@ void plug_update(void)
 		  h,
 		};
 		float thick = cell_width/2*sqrtf(t);
-		float radius = cell_width*1.5*sqrtf(t);
-		DrawCircleV(start_pos, radius, color);
 		DrawLineEx(start_pos, end_pos, thick, color);
-		// DrawRectangle(i*cell_width, h - h*2/3*t, ceilf(cell_width), h*2/3*t, color);
 	  }
-	} else {
+
+      //Display circles
+      BeginShaderMode(plug->circle);
+	  for (size_t i = 0; i < m; ++i) {
+		float hue = (float)i/m;
+		float t = out_smooth[i];
+		float saturation = 0.75f;
+		float value = 1.0f;
+		Color color = ColorFromHSV(hue*360, saturation, value);
+		Vector2 center = {
+		  i*cell_width + cell_width/2,
+		  h - h*2/3*t,
+		};
+		float radius = cell_width*1.5*sqrtf(t);
+		Rectangle rec = {
+		  .x = center.x - radius,
+		  .y = center.y - radius,
+		  .width = 2*radius,
+		  .height = 2*radius
+		};
+		DrawRectangleRec(rec, color);
+	  }
+	  EndShaderMode();
+	}else {
 	    const char *label;
 	    Color color;
 	    int height = 69;
