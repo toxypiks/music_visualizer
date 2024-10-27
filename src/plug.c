@@ -225,7 +225,7 @@ void plug_update(void)
 		  i*cell_width + cell_width/2,
 		  h - h*2/3*t,
 		};
-		float radius = cell_width*1.5*sqrtf(t);
+		float radius = cell_width*3*sqrtf(t);
 		/*Rectangle rec = {
 		  .x = center.x - radius,
 		  .y = center.y - radius,

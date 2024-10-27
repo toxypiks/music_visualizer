@@ -9,12 +9,16 @@ out vec4 finalColor;
 
 void main()
 {
-    float r = 0.5;
-    float x = fragTexCoord.x - 0.5;
-    float y = fragTexCoord.y - 0.5;
-    if(x*x + y*y <= r*r) {
-	  finalColor = fragColor;
-    } else {
-        finalColor = vec4(0);
-    }
+    float r = 0.25;
+	vec2 p = fragTexCoord - vec2(0.5);
+	if (length(p) <= 0.5) {
+	    float s = length(p) - r;
+        if(s <= 0) {
+	       finalColor = fragColor;
+        } else {
+		  finalColor = vec4(1, 0, 0, 1);
+        } 
+	} else {
+	  finalColor = vec4(0);
+	}
 }
