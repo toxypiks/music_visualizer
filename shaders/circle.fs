@@ -9,7 +9,12 @@ out vec4 finalColor;
 
 void main()
 {
-    float x = fragTexCoord.x;
-    float y = fragTexCoord.y;
-    finalColor = vec4(x, y, 0 ,1);
+    float r = 0.5;
+    float x = fragTexCoord.x - 0.5;
+    float y = fragTexCoord.y - 0.5;
+    if(x*x + y*y <= r*r) {
+	  finalColor = fragColor;
+    } else {
+        finalColor = vec4(0);
+    }
 }
