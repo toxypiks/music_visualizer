@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <rlgl.h>
+
 #define N (1<<10)
 
 typedef struct {
@@ -209,6 +211,8 @@ void plug_update(void)
 		DrawLineEx(start_pos, end_pos, thick, color);
 	  }
 
+	  Texture2D texture = {rlGetTextureIdDefault(), 1, 1, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
+
       //Display circles
       BeginShaderMode(plug->circle);
 	  for (size_t i = 0; i < m; ++i) {
@@ -222,13 +226,18 @@ void plug_update(void)
 		  h - h*2/3*t,
 		};
 		float radius = cell_width*1.5*sqrtf(t);
-		Rectangle rec = {
+		/*Rectangle rec = {
 		  .x = center.x - radius,
 		  .y = center.y - radius,
 		  .width = 2*radius,
-		  .height = 2*radius
+		  .height = 2*radius,
+		  };*/
+		Vector2 position = {
+		  .x = center.x - radius,
+		  .y = center.y - radius,
 		};
-		DrawRectangleRec(rec, color);
+	    DrawTextureEx(texture, position, 0, 2*radius, color);
+		// DrawRectangleRec(rec, color);
 	  }
 	  EndShaderMode();
 	}else {
