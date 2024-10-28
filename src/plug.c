@@ -23,6 +23,7 @@ float in_win[N];
 float complex out_raw[N];
 float out_log[N];
 float out_smooth[N];
+float out_smear[N];
 
 void fft(float in[], size_t stride, float complex out[], size_t n)
 {
@@ -185,18 +186,21 @@ void plug_update(void)
 	  }
 
 	  float smoothness = 8;
+	  float smearness = 5;
 	  for(size_t i = 0; i < m; ++i) {
 		out_smooth[i] += (out_log[i] - out_smooth[i])*smoothness*dt;
+		out_smear[i] += (out_smooth[i] - out_smear[i])*smearness*dt;
 	  }
 
 	  float cell_width = (float)w/m;
+
+	  float saturation = 0.75f;
+	  float value = 1.0f;
 
       //Display the Bars
 	  for (size_t i = 0; i < m; ++i) {
 		float hue = (float)i/m;
 		float t = out_smooth[i];
-		float saturation = 0.75f;
-		float value = 1.0f;
 		Color color = ColorFromHSV(hue*360, saturation, value);
 		Vector2 start_pos = {
 		  i*cell_width + cell_width/2,
@@ -218,28 +222,42 @@ void plug_update(void)
 	  for (size_t i = 0; i < m; ++i) {
 		float hue = (float)i/m;
 		float t = out_smooth[i];
-		float saturation = 0.75f;
-		float value = 1.0f;
 		Color color = ColorFromHSV(hue*360, saturation, value);
 		Vector2 center = {
 		  i*cell_width + cell_width/2,
 		  h - h*2/3*t,
 		};
 		float radius = cell_width*5*sqrtf(t);
-		/*Rectangle rec = {
-		  .x = center.x - radius,
-		  .y = center.y - radius,
-		  .width = 2*radius,
-		  .height = 2*radius,
-		  };*/
 		Vector2 position = {
 		  .x = center.x - radius,
 		  .y = center.y - radius,
 		};
 	    DrawTextureEx(texture, position, 0, 2*radius, color);
-		// DrawRectangleRec(rec, color);
 	  }
 	  EndShaderMode();
+
+	  for (size_t i = 0; i < m; ++i) {
+		float start = out_smear[i];
+		float end = out_smooth[i];
+		float hue = (float)i/m;
+		Color color = ColorFromHSV(hue*360, saturation, value);
+		Vector2 start_pos = {
+		  i*cell_width + cell_width/2,
+		  h - h*2/3*start,
+		};
+		Vector2 end_pos = {
+		  i*cell_width + cell_width/2,
+		  h - h*2/3*end,
+		};
+		float radius = cell_width*0.75;
+		Rectangle rec = {
+		  .x = start_pos.x - radius,
+		  .y = start_pos.y,
+		  .width = 2*radius,
+		  .height = end_pos.y - start_pos.y
+		};
+		DrawRectangleRec(rec, color);
+	  }
 	}else {
 	    const char *label;
 	    Color color;
