@@ -186,7 +186,7 @@ void plug_update(void)
 	  }
 
 	  float smoothness = 8;
-	  float smearness = 5;
+	  float smearness = 6;
 	  for(size_t i = 0; i < m; ++i) {
 		out_smooth[i] += (out_log[i] - out_smooth[i])*smoothness*dt;
 		out_smear[i] += (out_smooth[i] - out_smear[i])*smearness*dt;
@@ -240,6 +240,7 @@ void plug_update(void)
 		float start = out_smear[i];
 		float end = out_smooth[i];
 		float hue = (float)i/m;
+		float radius = cell_width*0.75;
 		Color color = ColorFromHSV(hue*360, saturation, value);
 		Vector2 start_pos = {
 		  i*cell_width + cell_width/2,
@@ -249,14 +250,23 @@ void plug_update(void)
 		  i*cell_width + cell_width/2,
 		  h - h*2/3*end,
 		};
-		float radius = cell_width*0.75;
-		Rectangle rec = {
-		  .x = start_pos.x - radius,
-		  .y = start_pos.y,
-		  .width = 2*radius,
-		  .height = end_pos.y - start_pos.y
-		};
-		DrawRectangleRec(rec, color);
+		if( end_pos.y >= start_pos.y) {
+		  Rectangle rec = {
+			.x = start_pos.x - radius,
+		    .y = start_pos.y,
+		    .width = 2*radius,
+		    .height = end_pos.y - start_pos.y
+		  };
+		  DrawRectangleRec(rec, color);
+		} else {
+		  Rectangle rec = {
+			.x = end_pos.x - radius,
+		    .y = end_pos.y,
+		    .width = 2*radius,
+		    .height = start_pos.y - end_pos.y
+		  };
+		  DrawRectangleRec(rec, color);
+		}
 	  }
 	}else {
 	    const char *label;
