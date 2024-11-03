@@ -14,6 +14,7 @@ typedef struct {
   Music music;
   bool error;
   Shader circle;
+  Shader smear;
 } Plug;
 
 Plug *plug = NULL;
@@ -71,6 +72,7 @@ void plug_init(void)
   memset(plug, 0, sizeof(*plug));
 
   plug->circle = LoadShader(NULL, "../shaders/circle.fs");
+  plug->smear = LoadShader(NULL, "../shaders/smear.fs");
 }
 
 Plug *plug_pre_reload(void)
@@ -89,6 +91,8 @@ void plug_post_reload(Plug *prev)
   }
   UnloadShader(plug->circle);
   plug->circle = LoadShader(NULL, "../shaders/circle.fs");
+  UnloadShader(plug->smear);
+  plug->smear = LoadShader(NULL, "../shaders/smear.fs");
 }
 
 void plug_update(void)
@@ -217,6 +221,44 @@ void plug_update(void)
 
 	  Texture2D texture = {rlGetTextureIdDefault(), 1, 1, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
 
+	  BeginShaderMode(plug->smear);
+	  for (size_t i = 0; i < m; ++i) {
+		float start = out_smear[i];
+		float end = out_smooth[i];
+		float hue = (float)i/m;
+		Color color = ColorFromHSV(hue*360, saturation, value);
+		Vector2 start_pos = {
+		  i*cell_width + cell_width/2,
+		  h - h*2/3*start,
+		};
+		Vector2 end_pos = {
+		  i*cell_width + cell_width/2,
+		  h - h*2/3*end,
+		};
+		float radius = cell_width*sqrtf(end);
+		Vector2 origin = {0};
+		if( end_pos.y >= start_pos.y) {
+		  Rectangle dest = {
+			.x = start_pos.x - radius,
+		    .y = start_pos.y,
+		    .width = 2*radius,
+		    .height = end_pos.y - start_pos.y
+		  };
+		  Rectangle source = {0, 0, 1, 0.5};
+		  DrawTexturePro(texture, source, dest, origin, 0, color);
+		} else {
+		  Rectangle dest = {
+			.x = end_pos.x - radius,
+		    .y = end_pos.y,
+		    .width = 2*radius,
+		    .height = start_pos.y - end_pos.y
+		  };
+		  Rectangle source = {0, 0.5, 1, 0.5};
+		  DrawTexturePro(texture, source, dest, origin, 0, color);
+		}
+	  }
+	  EndShaderMode();
+	  
       //Display circles
       BeginShaderMode(plug->circle);
 	  for (size_t i = 0; i < m; ++i) {
@@ -235,39 +277,6 @@ void plug_update(void)
 	    DrawTextureEx(texture, position, 0, 2*radius, color);
 	  }
 	  EndShaderMode();
-
-	  for (size_t i = 0; i < m; ++i) {
-		float start = out_smear[i];
-		float end = out_smooth[i];
-		float hue = (float)i/m;
-		float radius = cell_width*0.75;
-		Color color = ColorFromHSV(hue*360, saturation, value);
-		Vector2 start_pos = {
-		  i*cell_width + cell_width/2,
-		  h - h*2/3*start,
-		};
-		Vector2 end_pos = {
-		  i*cell_width + cell_width/2,
-		  h - h*2/3*end,
-		};
-		if( end_pos.y >= start_pos.y) {
-		  Rectangle rec = {
-			.x = start_pos.x - radius,
-		    .y = start_pos.y,
-		    .width = 2*radius,
-		    .height = end_pos.y - start_pos.y
-		  };
-		  DrawRectangleRec(rec, color);
-		} else {
-		  Rectangle rec = {
-			.x = end_pos.x - radius,
-		    .y = end_pos.y,
-		    .width = 2*radius,
-		    .height = start_pos.y - end_pos.y
-		  };
-		  DrawRectangleRec(rec, color);
-		}
-	  }
 	}else {
 	    const char *label;
 	    Color color;
