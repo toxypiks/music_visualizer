@@ -6,6 +6,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(include)
 
+find_package(raylib)
+
+set(SIMPLE_EXAMPLE_FFMPEG_SRC
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_scripts/simple_example_ffmpeg.c
+  )
+
+add_executable(simple_example_ffmpeg)
+target_sources(simple_example_ffmpeg
+ PRIVATE
+  ${SIMPLE_EXAMPLE_FFMPEG_SRC}
+  )
+
+target_link_libraries(simple_example_ffmpeg
+  ${raylib_LIBRARIES}
+  )
+
 set(MUSIC_VISUALIZER
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.c
   )
@@ -21,8 +37,6 @@ set(FFT_TRYOUT
 set(PLUG_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/src/plug.c
   )
-
-find_package(raylib)
 
 add_executable(music_visualizer)
 target_sources(music_visualizer
