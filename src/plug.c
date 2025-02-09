@@ -77,7 +77,7 @@ void plug_init(void)
 
 Plug *plug_pre_reload(void)
 {
-  if(IsMusicReady(plug->music)) {
+  if(IsMusicValid(plug->music)) {
 	DetachAudioStreamProcessor(plug->music.stream, callback);
 	return plug;
   }
@@ -86,7 +86,7 @@ Plug *plug_pre_reload(void)
 void plug_post_reload(Plug *prev)
 {
   plug = prev;
-  if(IsMusicReady(plug->music)) {
+  if(IsMusicValid(plug->music)) {
     AttachAudioStreamProcessor(plug->music.stream, callback);
   }
   UnloadShader(plug->circle);
@@ -97,12 +97,12 @@ void plug_post_reload(Plug *prev)
 
 void plug_update(void)
 {
-  if(IsMusicReady(plug->music)) {
+  if(IsMusicValid(plug->music)) {
 	UpdateMusicStream(plug->music);
   }
 
 	if(IsKeyPressed(KEY_SPACE)) {
-	  if(IsMusicReady(plug->music)) {
+	  if(IsMusicValid(plug->music)) {
 	    if(IsMusicStreamPlaying(plug->music)) {
 		PauseMusicStream(plug->music);
 		} else {
@@ -112,7 +112,7 @@ void plug_update(void)
 	}
 
 	if(IsKeyPressed(KEY_Q)) {
-	  if (IsMusicReady(plug->music)) {
+	  if (IsMusicValid(plug->music)) {
 		StopMusicStream(plug->music);
 		PlayMusicStream(plug->music);
 	  }
@@ -124,7 +124,7 @@ void plug_update(void)
 		printf("NEW FILES JUST DROPPED!\n");
 		const char *file_path = droppedFiles.paths[0];
 
-		if(IsMusicReady(plug->music)) {
+		if(IsMusicValid(plug->music)) {
 		  StopMusicStream(plug->music);
 		  UnloadMusicStream(plug->music);
 		}
@@ -132,7 +132,7 @@ void plug_update(void)
 		//weird
 		plug->music = LoadMusicStream(file_path);
 
-		if(IsMusicReady(plug->music)) {
+		if(IsMusicValid(plug->music)) {
 		  plug->error = false;
 		  printf("music.frameCount = %u\n", plug->music.frameCount);
 		  printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
@@ -157,7 +157,7 @@ void plug_update(void)
 	BeginDrawing();
 	ClearBackground(BLACK);
 
-	if (IsMusicReady(plug->music)) {
+	if (IsMusicValid(plug->music)) {
 	  for (size_t i = 0; i < N; ++i) {
 		float t = (float)i/(N -1);
 		float hann = 0.5 - 0.5*cosf(2*PI*t);
