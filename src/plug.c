@@ -7,14 +7,18 @@
 #include <stdlib.h>
 
 #include <rlgl.h>
+#define GLSL_VERSION 120
 
-#define N (1<<10)
+#define N (1<<13)
+#define FONT_SIZE 69
 
 typedef struct {
-  Music music;
-  bool error;
-  Shader circle;
-  Shader smear;
+    Music music;
+    Font font;
+    Shader circle;
+    int circle_radius_location;
+    int circle_power_location;
+    bool error;
 } Plug;
 
 Plug *plug = NULL;
@@ -71,16 +75,18 @@ void plug_init(void)
   assert(plug != NULL && "Oops");
   memset(plug, 0, sizeof(*plug));
 
-  plug->circle = LoadShader(NULL, "../shaders/circle.fs");
-  plug->smear = LoadShader(NULL, "../shaders/smear.fs");
+  plug->font = LoadFontEx("../fonts/Alegreya-Regular.ttf", FONT_SIZE, NULL, 0);
+  plug->circle = LoadShader(NULL, TextFormat("../shaders/circle.fs", GLSL_VERSION));
+  plug->circle_radius_location = GetShaderLocation(plug->circle, "radius");
+  plug->circle_power_location = GetShaderLocation(plug->circle, "power");
 }
 
 Plug *plug_pre_reload(void)
 {
   if(IsMusicValid(plug->music)) {
     DetachAudioStreamProcessor(plug->music.stream, callback);
-    return plug;
   }
+  return plug;
 }
 
 void plug_post_reload(Plug *prev)
@@ -90,206 +96,207 @@ void plug_post_reload(Plug *prev)
     AttachAudioStreamProcessor(plug->music.stream, callback);
   }
   UnloadShader(plug->circle);
-  plug->circle = LoadShader(NULL, "../shaders/circle.fs");
-  UnloadShader(plug->smear);
-  plug->smear = LoadShader(NULL, "../shaders/smear.fs");
+  plug->circle = LoadShader(NULL, TextFormat("../shaders/circle.fs", GLSL_VERSION));
+  plug->circle_radius_location = GetShaderLocation(plug->circle, "radius");
+  plug->circle_power_location = GetShaderLocation(plug->circle, "power");
 }
 
 void plug_update(void)
 {
-  if(IsMusicValid(plug->music)) {
-    UpdateMusicStream(plug->music);
-  }
+    int w = GetRenderWidth();
+    int h = GetRenderHeight();
+    float dt = GetFrameTime();
 
-  if(IsKeyPressed(KEY_SPACE)) {
-    if(IsMusicValid(plug->music)) {
-      if(IsMusicStreamPlaying(plug->music)) {
-        PauseMusicStream(plug->music);
-      } else {
-        ResumeMusicStream(plug->music);
-      }
+    if (IsFileDropped()) {
+        FilePathList droppedFiles = LoadDroppedFiles();
+        if (droppedFiles.count > 0) {
+            const char *file_path = droppedFiles.paths[0];
+
+            if (IsMusicValid(plug->music)) {
+                StopMusicStream(plug->music);
+                UnloadMusicStream(plug->music);
+            }
+
+            plug->music = LoadMusicStream(file_path);
+
+            if (IsMusicValid(plug->music)) {
+                plug->error = false;
+                printf("music.frameCount = %u\n", plug->music.frameCount);
+                printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
+                printf("music.stream.sampleSize = %u\n", plug->music.stream.sampleSize);
+                printf("music.stream.channels = %u\n", plug->music.stream.channels);
+                SetMusicVolume(plug->music, 0.5f);
+                AttachAudioStreamProcessor(plug->music.stream, callback);
+                PlayMusicStream(plug->music);
+            } else {
+                plug->error = true;
+            }
+        }
+        UnloadDroppedFiles(droppedFiles);
     }
-  }
 
-  if(IsKeyPressed(KEY_Q)) {
+    BeginDrawing();
+    ClearBackground(CLITERAL(Color) {
+        0x15, 0x15, 0x15, 0xFF
+      });
+
     if (IsMusicValid(plug->music)) {
-      StopMusicStream(plug->music);
-      PlayMusicStream(plug->music);
-    }
-  }
+      UpdateMusicStream(plug->music);
+      if (IsKeyPressed(KEY_SPACE)) {
+        if (IsMusicStreamPlaying(plug->music)) {
+          PauseMusicStream(plug->music);
+        } else {
+          ResumeMusicStream(plug->music);
+        }
+      }
 
-  if(IsFileDropped()) {
-    FilePathList droppedFiles = LoadDroppedFiles();
-    if (droppedFiles.count > 0) {
-      printf("NEW FILES JUST DROPPED!\n");
-      const char *file_path = droppedFiles.paths[0];
-
-      if(IsMusicValid(plug->music)) {
+      if (IsKeyPressed(KEY_Q)) {
         StopMusicStream(plug->music);
-        UnloadMusicStream(plug->music);
-      }
-
-      //weird
-      plug->music = LoadMusicStream(file_path);
-
-      if(IsMusicValid(plug->music)) {
-        plug->error = false;
-        printf("music.frameCount = %u\n", plug->music.frameCount);
-        printf("music.stream.sampleRate = %u\n", plug->music.stream.sampleRate);
-        printf("music.stream.sampleSize = %u\n", plug->music.stream.sampleSize);
-        printf("music.stream.channels = %u\n", plug->music.stream.channels);
-
-        SetMusicVolume(plug->music, 0.5f);
-        AttachAudioStreamProcessor(plug->music.stream, callback);
         PlayMusicStream(plug->music);
-      } else {
-        plug->error = true;
       }
-    }
-    UnloadDroppedFiles(droppedFiles);
-  }
 
-  int w = GetRenderWidth();
-  int h = GetRenderHeight();
-
-  float dt = GetFrameTime();
-
-  BeginDrawing();
-  ClearBackground(BLACK);
-
-  if (IsMusicValid(plug->music)) {
-    for (size_t i = 0; i < N; ++i) {
-      float t = (float)i/(N -1);
-      float hann = 0.5 - 0.5*cosf(2*PI*t);
-      in_win[i] = in_raw[i]*hann;
-    }
-
-    // FFT
-    fft(in_win, 1, out_raw, N);
-
-    float step = 1.06;
-    float lowf = 1.0f;
-    size_t m = 0;
-    float max_amp = 1.0f;
-
-    // "Squash" into the Logarithmic Scale
-    for(float f = lowf; (size_t) f < N/2; f = ceilf(f*step)) {
-      float f1 = ceilf(f*step);
-      float a = 0.0f;
-      for(size_t q = (size_t) f; q < N/2 && q < (size_t) f1; ++q) {
-        float b = amp(out_raw[q]);
-        if (b >a) a = b;
+      // Apply the Hann Window on the Input - https://en.wikipedia.org/wiki/Hann_function
+      for (size_t i = 0; i < N; ++i) {
+        float t = (float)i/(N - 1);
+        float hann = 0.5 - 0.5*cosf(2*PI*t);
+        in_win[i] = in_raw[i]*hann;
       }
-      if(max_amp < a) max_amp = a;
-      out_log[m++] = a;
-    }
 
-    // Normalize Frequencies to 0..1 range
-    for (size_t i = 0; i < m; ++i) {
-      out_log[i] /= max_amp;
-    }
+      // FFT
+      fft(in_win, 1, out_raw, N);
 
-    float smoothness = 8;
-    float smearness = 6;
-    for(size_t i = 0; i < m; ++i) {
-      out_smooth[i] += (out_log[i] - out_smooth[i])*smoothness*dt;
-      out_smear[i] += (out_smooth[i] - out_smear[i])*smearness*dt;
-    }
+      // "Squash" into the Logarithmic Scale
+      float step = 1.06;
+      float lowf = 1.0f;
+      size_t m = 0;
+      float max_amp = 1.0f;
+      for (float f = lowf; (size_t) f < N/2; f = ceilf(f*step)) {
+        float f1 = ceilf(f*step);
+        float a = 0.0f;
+        for (size_t q = (size_t) f; q < N/2 && q < (size_t) f1; ++q) {
+          float b = amp(out_raw[q]);
+          if (b > a) a = b;
+        }
+        if (max_amp < a) max_amp = a;
+        out_log[m++] = a;
+      }
 
-    float cell_width = (float)w/m;
+      // Normalize Frequencies to 0..1 range
+      for (size_t i = 0; i < m; ++i) {
+        out_log[i] /= max_amp;
+      }
 
-    float saturation = 0.75f;
-    float value = 1.0f;
+      // Smooth out and smear the values
+      for (size_t i = 0; i < m; ++i) {
+        float smoothness = 8;
+        out_smooth[i] += (out_log[i] - out_smooth[i])*smoothness*dt;
+        float smearness = 3;
+        out_smear[i] += (out_smooth[i] - out_smear[i])*smearness*dt;
+      }
 
-      //Display the Bars
-    for (size_t i = 0; i < m; ++i) {
-      float hue = (float)i/m;
-      float t = out_smooth[i];
-      Color color = ColorFromHSV(hue*360, saturation, value);
-      Vector2 start_pos = {
-        i*cell_width + cell_width/2,
-        h - h*2/3*t,
-      };
+      // The width of a single bar
+      float cell_width = (float)w/m;
 
-      Vector2 end_pos = {
-        i*cell_width + cell_width/2,
-        h,
-      };
-      float thick = cell_width/2*sqrtf(t);
-      DrawLineEx(start_pos, end_pos, thick, color);
-    }
+      // Global color parameters
+      float saturation = 0.75f;
+      float value = 1.0f;
 
-    Texture2D texture = {rlGetTextureIdDefault(), 1, 1, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8};
-
-    BeginShaderMode(plug->smear);
-    for (size_t i = 0; i < m; ++i) {
-      float start = out_smear[i];
-      float end = out_smooth[i];
-      float hue = (float)i/m;
-      Color color = ColorFromHSV(hue*360, saturation, value);
-      Vector2 start_pos = {
-        i*cell_width + cell_width/2,
-        h - h*2/3*start,
-      };
-      Vector2 end_pos = {
-        i*cell_width + cell_width/2,
-        h - h*2/3*end,
-      };
-      float radius = cell_width*sqrtf(end);
-      Vector2 origin = {0};
-      if( end_pos.y >= start_pos.y) {
-        Rectangle dest = {
-          .x = start_pos.x - radius,
-          .y = start_pos.y,
-          .width = 2*radius,
-          .height = end_pos.y - start_pos.y
+      // Display the Bars
+      for (size_t i = 0; i < m; ++i) {
+        float t = out_smooth[i];
+        float hue = (float)i/m;
+        Color color = ColorFromHSV(hue*360, saturation, value);
+        Vector2 startPos = {
+          i*cell_width + cell_width/2,
+          h - h*2/3*t,
         };
-        Rectangle source = {0, 0, 1, 0.5};
-        DrawTexturePro(texture, source, dest, origin, 0, color);
-      } else {
-        Rectangle dest = {
-          .x = end_pos.x - radius,
-          .y = end_pos.y,
-          .width = 2*radius,
-          .height = start_pos.y - end_pos.y
+        Vector2 endPos = {
+          i*cell_width + cell_width/2,
+          h,
         };
-        Rectangle source = {0, 0.5, 1, 0.5};
-        DrawTexturePro(texture, source, dest, origin, 0, color);
+        float thick = cell_width/3*sqrtf(t);
+        DrawLineEx(startPos, endPos, thick, color);
       }
-    }
-    EndShaderMode();
 
-    //Display circles
-    BeginShaderMode(plug->circle);
-    for (size_t i = 0; i < m; ++i) {
-      float hue = (float)i/m;
-      float t = out_smooth[i];
-      Color color = ColorFromHSV(hue*360, saturation, value);
-      Vector2 center = {
-        i*cell_width + cell_width/2,
-        h - h*2/3*t,
-      };
-      float radius = cell_width*5*sqrtf(t);
-      Vector2 position = {
-        .x = center.x - radius,
-        .y = center.y - radius,
-      };
-      DrawTextureEx(texture, position, 0, 2*radius, color);
-    }
-    EndShaderMode();
-  }else {
-    const char *label;
-    Color color;
-    int height = 69;
-    if (plug->error) {
-      label = "Could not load file";
-      color = RED;
+      Texture2D texture = { rlGetTextureIdDefault(), 1, 1, 1, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 };
+      // Display the Smears
+      SetShaderValue(plug->circle, plug->circle_radius_location, (float[1]){ 0.3f }, SHADER_UNIFORM_FLOAT);
+      SetShaderValue(plug->circle, plug->circle_power_location, (float[1]){ 3.0f }, SHADER_UNIFORM_FLOAT);
+      BeginShaderMode(plug->circle);
+      for (size_t i = 0; i < m; ++i) {
+        float start = out_smear[i];
+        float end = out_smooth[i];
+        float hue = (float)i/m;
+        Color color = ColorFromHSV(hue*360, saturation, value);
+        Vector2 startPos = {
+          i*cell_width + cell_width/2,
+          h - h*2/3*start,
+        };
+        Vector2 endPos = {
+          i*cell_width + cell_width/2,
+          h - h*2/3*end,
+        };
+        float radius = cell_width*3*sqrtf(end);
+        Vector2 origin = {0};
+        if (endPos.y >= startPos.y) {
+          Rectangle dest = {
+            .x = startPos.x - radius/2,
+            .y = startPos.y,
+            .width = radius,
+            .height = endPos.y - startPos.y
+          };
+          Rectangle source = {0, 0, 1, 0.5};
+          DrawTexturePro(texture, source, dest, origin, 0, color);
+        } else {
+          Rectangle dest = {
+            .x = endPos.x - radius/2,
+            .y = endPos.y,
+            .width = radius,
+            .height = startPos.y - endPos.y
+          };
+          Rectangle source = {0, 0.5, 1, 0.5};
+          DrawTexturePro(texture, source, dest, origin, 0, color);
+        }
+      }
+      EndShaderMode();
+
+      // Display the Circles
+      SetShaderValue(plug->circle, plug->circle_radius_location, (float[1]){ 0.07f }, SHADER_UNIFORM_FLOAT);
+      SetShaderValue(plug->circle, plug->circle_power_location, (float[1]){ 5.0f }, SHADER_UNIFORM_FLOAT);
+      BeginShaderMode(plug->circle);
+      for (size_t i = 0; i < m; ++i) {
+        float t = out_smooth[i];
+        float hue = (float)i/m;
+        Color color = ColorFromHSV(hue*360, saturation, value);
+        Vector2 center = {
+          i*cell_width + cell_width/2,
+          h - h*2/3*t,
+        };
+        float radius = cell_width*6*sqrtf(t);
+        Vector2 position = {
+          .x = center.x - radius,
+          .y = center.y - radius,
+        };
+        DrawTextureEx(texture, position, 0, 2*radius, color);
+      }
+      EndShaderMode();
     } else {
-      label = "Drag&Drop Music Here";
-      color = WHITE;
+      const char *label;
+      Color color;
+      if (plug->error) {
+        label = "Could not load file";
+        color = RED;
+      } else {
+        label = "Drag&Drop Music Here";
+        color = WHITE;
+      }
+      Vector2 size = MeasureTextEx(plug->font, label, plug->font.baseSize, 0);
+      Vector2 position = {
+        w/2 - size.x/2,
+        h/2 - size.y/2,
+      };
+      DrawTextEx(plug->font, label, position, plug->font.baseSize, 0, color);
     }
-    int width = MeasureText(label, height);
-    DrawText(label, w/2 - width/2, h/2 - height/2, height, color);
-  }
-  EndDrawing();
+
+    EndDrawing();
 }
