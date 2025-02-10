@@ -1,10 +1,12 @@
 #include <stdio.h>
-#include "plug.h"
 #include <raylib.h>
 #include <assert.h>
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include "ffmpeg.h"
+#include "plug.h"
 
 #include <rlgl.h>
 #define GLSL_VERSION 120
