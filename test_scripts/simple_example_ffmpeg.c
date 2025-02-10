@@ -55,9 +55,10 @@ int main (void)
                      "-r", STR(FPS),
                      "-an",
                      "-i", "-",
+                     "-i", "../music/example_music.mp3",
                      "-c:v", "libx264",
 
-                     "../output_video/output_video_simple_example.mp4",
+                     "../video_output/output_video_simple_example.mp4",
                      NULL
       );
     if (ret < 0) {
