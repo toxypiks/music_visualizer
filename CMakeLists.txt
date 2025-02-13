@@ -120,6 +120,7 @@ target_include_directories(music_visualizer
 target_link_libraries(music_visualizer
   ${raylib_LIBRARIES}
   ${MUSIC_VISUALIZER_LINK_PLUG_LIB}
+  ffmpeg
 )
 
 target_link_libraries(music_visualizer m)
